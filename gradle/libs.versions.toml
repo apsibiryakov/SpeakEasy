@@ -9,7 +9,8 @@ activityCompose = "1.13.0"
 kotlin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 composeBom = "2026.02.01"
-room = "2.6.1"
+# Версия Room, исправленная для работы с KSP2
+room = "2.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
