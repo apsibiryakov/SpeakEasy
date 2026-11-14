@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.ViewModelFactoryDsl
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,8 +15,10 @@ import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class GreetingViewModel(private val greetingDao: GreetingDao) : ViewModel() {
+@HiltViewModel
+class GreetingViewModel @Inject constructor(private val greetingDao: GreetingDao) : ViewModel() {
     // Считываем реактивный поток данных из Room
     val uiState: StateFlow<String> = greetingDao.getGreeting()
         .map { entity -> entity?.message ?: "Загрузка..." }
@@ -33,13 +36,4 @@ class GreetingViewModel(private val greetingDao: GreetingDao) : ViewModel() {
         }
     }
 
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val context =
-                    this[AndroidViewModelFactory.APPLICATION_KEY] as SpeakEasyApp
-                GreetingViewModel(context.database.greetingDao())
-            }
-        }
-    }
 }
