@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,12 +17,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
-
 @RunWith(AndroidJUnit4::class)
 class TalkRepositoryTest {
+
     private lateinit var context: Context
     private lateinit var database: AppDatabase
     private lateinit var dao: TalkItemDao
+    private lateinit var strategyDao: VoiceStrategyDao
     private lateinit var mediaStorage: MediaStorageManager
     private lateinit var repository: TalkRepository
 
@@ -34,16 +36,31 @@ class TalkRepositoryTest {
         )
             .allowMainThreadQueries()
             .build()
+
         dao = database.talkItemDao()
+        strategyDao = database.voiceStrategyDao()
         mediaStorage = MediaStorageManager(context)
         repository = TalkRepository(dao, mediaStorage)
+
+        // Вставляем базовую стратегию для соблюдения целостности ForeignKey
+        runBlocking {
+            strategyDao.insertStrategy(
+                VoiceStrategyEntity(
+                    id = 1L,
+                    name = "Синтезатор речи",
+                    engineType = VoiceEngineType.TTS,
+                    isSystem = true
+                )
+            )
+        }
     }
 
     @After
-    fun tearDown(){
+    fun tearDown() {
         database.close()
         File(context.filesDir, "speakeasy_media").deleteRecursively()
     }
+
     @Test
     fun getCardWithParent_returnsCardAndItsParentCategory() = runTest {
         val foodId = repository.saveItem(
@@ -76,20 +93,17 @@ class TalkRepositoryTest {
 
     @Test
     fun deleteItem_deletesFilesInsideMediaFolder_andProtectsExternalFiles() = runTest {
-        // 1. Создаем реальный файл внутри защищенной папки speakeasy_media
         val internalAudioPath = mediaStorage.createNewAudioFilePath("m4a")
         val internalAudioFile = File(internalAudioPath).apply {
             writeText("fake audio content")
         }
         assertTrue(internalAudioFile.exists())
 
-        // 2. Создаем сторонний файл вне папки speakeasy_media (например, в cacheDir)
         val externalFile = File(context.cacheDir, "important_external_file.jpg").apply {
             writeText("external data")
         }
         assertTrue(externalFile.exists())
 
-        // 3. Сохраняем карточку со ссылками на оба файла
         val cardId = repository.saveItem(
             TalkItemEntity(
                 title = "Тест",
@@ -100,18 +114,12 @@ class TalkRepositoryTest {
         )
         val savedCard = dao.getItemById(cardId)!!
 
-        // 4. Удаляем карточку через репозиторий
         repository.deleteItem(savedCard)
 
-        // Проверяем:
-        // - Запись удалена из БД
         assertNull(dao.getItemById(cardId))
-        // - Файл внутри speakeasy_media физически удален
         assertFalse(internalAudioFile.exists())
-        // - Внешний файл за пределами speakeasy_media остался нетронутым
         assertTrue(externalFile.exists())
 
-        // Убираем за собой временный внешний файл
         externalFile.delete()
     }
 }

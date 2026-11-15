@@ -12,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 open class AudioPlaybackManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val mediaStorage: MediaStorageManager
 ) {
     private var mediaPlayer: MediaPlayer? = null
     private var tts: TextToSpeech? = null
@@ -48,13 +49,59 @@ open class AudioPlaybackManager @Inject constructor(
     }
 
     // основной метод озвучки: сначала записанный аудиофайл, затем синтез речи через TTS
-    fun playItem(item: TalkItemEntity){
+    fun playItem(item: TalkItemEntity, strategy: VoiceStrategyEntity) {
         stop()
-        val audioFile = item.audioPath?.let{ File(it) }
-        if (audioFile != null && audioFile.exists() && audioFile.canRead()){
-            playAudioFile(audioFile, fallbackText = item.speechText)
-        } else {
-            speakWithTts(item.speechText)
+
+        when (strategy.engineType) {
+            VoiceEngineType.CUSTOM_RECORDING -> {
+                val audioFile = item.audioPath?.let { File(it) }
+                if (audioFile != null && audioFile.exists() && audioFile.canRead()) {
+                    playAudioFile(audioFile, fallbackText = item.speechText)
+                } else {
+                    speakWithTts(item.speechText)
+                }
+            }
+
+            VoiceEngineType.BUILT_IN_RAW -> {
+                val key = item.builtInAudioKey
+                if (!key.isNullOrBlank()) {
+                    val resName = "${strategy.resourcePrefix}$key"
+                    val resId = mediaStorage.resolveResourceId("res://$resName", "raw")
+                    if (resId != 0) {
+                        playRawResource(resId, fallbackText = item.speechText)
+                    } else {
+                        speakWithTts(item.speechText)
+                    }
+                } else {
+                    speakWithTts(item.speechText)
+                }
+            }
+
+            VoiceEngineType.TTS -> {
+                speakWithTts(item.speechText)
+            }
+        }
+    }
+
+    protected open fun playRawResource(resId: Int, fallbackText: String) {
+        try {
+            mediaPlayer = MediaPlayer.create(context, resId)?.apply {
+                setOnCompletionListener { releaseMediaPlayer() }
+                setOnErrorListener { _, _, _ ->
+                    releaseMediaPlayer()
+                    speakWithTts(fallbackText)
+                    true
+                }
+                start()
+            }
+
+            if (mediaPlayer == null) {
+                speakWithTts(fallbackText)
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlaybackManager", "Ошибка воспроизведения res/raw ($resId): ${e.message}")
+            releaseMediaPlayer()
+            speakWithTts(fallbackText)
         }
     }
 
