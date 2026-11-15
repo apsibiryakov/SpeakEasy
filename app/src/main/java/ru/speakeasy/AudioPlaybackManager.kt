@@ -1,0 +1,126 @@
+package ru.speakeasy
+
+import android.content.Context
+import android.media.MediaPlayer
+import android.speech.tts.TextToSpeech
+import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+open class AudioPlaybackManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    private var mediaPlayer: MediaPlayer? = null
+    private var tts: TextToSpeech? = null
+    protected var isTtsReady = false
+
+    // запоминание фразы до инициализации озвучки
+    private var pendingSpeechText: String? = null
+
+    init {
+        initTextToSpeech()
+    }
+
+    protected open fun initTextToSpeech(){
+        tts = TextToSpeech(context){ status ->
+            if (status == TextToSpeech.SUCCESS){
+                val russianLocale = Locale.forLanguageTag("ru-RU")
+                val result = tts?.setLanguage(russianLocale)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED){
+                    Log.w("AudioPlaybackManager", "Русский язык для TTS не поддерживается, используем язык по умолчанию")
+                    tts?.language = Locale.getDefault()
+                }
+                isTtsReady = true
+
+                // озвучка фразы, запомненной до инициализации TTS
+                pendingSpeechText?.let { text ->
+                    speakWithTts(text)
+                    pendingSpeechText = null
+                }
+            } else {
+                Log.e("AudioPlaybackManager", "Ошибка инициализации TextToSpeech: статус $status")
+            }
+        }
+    }
+
+    // основной метод озвучки: сначала записанный аудиофайл, затем синтез речи через TTS
+    fun playItem(item: TalkItemEntity){
+        stop()
+        val audioFile = item.audioPath?.let{ File(it) }
+        if (audioFile != null && audioFile.exists() && audioFile.canRead()){
+            playAudioFile(audioFile, fallbackText = item.speechText)
+        } else {
+            speakWithTts(item.speechText)
+        }
+    }
+
+    protected open fun playAudioFile(file: File, fallbackText: String){
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(file.absolutePath)
+                setOnPreparedListener { mp ->
+                    mp.start()
+                }
+                setOnCompletionListener {
+                    releaseMediaPlayer()
+                }
+                setOnErrorListener { _, what, extra ->
+                    Log.e("AudioPlaybackManager", "Ошибка MediaPlayer ($what, $extra), переключаемся на TTS")
+                    releaseMediaPlayer()
+                    speakWithTts(fallbackText)
+                    true
+                }
+                prepareAsync()
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlaybackManager", "Не удалось запустить аудиофайл: ${e.message}")
+            releaseMediaPlayer()
+            speakWithTts(fallbackText)
+        }
+    }
+
+    protected open fun speakWithTts(text: String){
+        if (text.isBlank()) return
+        if (isTtsReady){
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "speakeasy_utterance_id")
+        } else {
+            pendingSpeechText = text
+        }
+    }
+
+    open fun stop(){
+        pendingSpeechText = null
+        releaseMediaPlayer()
+        if (isTtsReady && tts?.isSpeaking == true){
+            tts?.stop()
+        }
+    }
+
+    private fun releaseMediaPlayer(){
+        try {
+            mediaPlayer?.let { player ->
+                if (player.isPlaying){
+                    player.stop()
+                }
+                player.release()
+            }
+        } catch (e: Exception){
+            Log.w("AudioPlaybackManager", "Ошибка при освобождении MediaPlayer: ${e.message}")
+        } finally {
+            mediaPlayer = null
+        }
+    }
+
+    // полное освобождение ресурсов при завершении работы
+    fun shutdown(){
+        stop()
+        tts?.shutdown()
+        tts = null
+        isTtsReady = false
+    }
+
+}
