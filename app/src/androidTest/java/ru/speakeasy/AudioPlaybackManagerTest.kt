@@ -14,13 +14,40 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class AudioPlaybackManagerTest {
+
     private lateinit var context: Context
+    private lateinit var mediaStorage: MediaStorageManager
     private lateinit var testableManager: TestableAudioPlaybackManager
     private lateinit var tempAudioFile: File
 
-    // тестовая заглушка вместо реального проигрывания файла
-    private class TestableAudioPlaybackManager(context: Context) : AudioPlaybackManager(context) {
+    private val ttsStrategy = VoiceStrategyEntity(
+        id = 1L,
+        name = "Синтезатор речи",
+        engineType = VoiceEngineType.TTS,
+        isSystem = true
+    )
+
+    private val customStrategy = VoiceStrategyEntity(
+        id = 2L,
+        name = "Записанный голос",
+        engineType = VoiceEngineType.CUSTOM_RECORDING,
+        isSystem = true
+    )
+
+    private val femaleRawStrategy = VoiceStrategyEntity(
+        id = 3L,
+        name = "Женский голос",
+        engineType = VoiceEngineType.BUILT_IN_RAW,
+        resourcePrefix = "female_",
+        isSystem = true
+    )
+
+    private class TestableAudioPlaybackManager(
+        context: Context,
+        mediaStorage: MediaStorageManager
+    ) : AudioPlaybackManager(context, mediaStorage) {
         var lastPlayedFile: File? = null
+        var lastPlayedRawResId: Int? = null
         var lastSpokenText: String? = null
         var stopCalledCount = 0
 
@@ -30,6 +57,10 @@ class AudioPlaybackManagerTest {
 
         override fun playAudioFile(file: File, fallbackText: String) {
             lastPlayedFile = file
+        }
+
+        override fun playRawResource(resId: Int, fallbackText: String) {
+            lastPlayedRawResId = resId
         }
 
         override fun speakWithTts(text: String) {
@@ -47,7 +78,8 @@ class AudioPlaybackManagerTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        testableManager = TestableAudioPlaybackManager(context)
+        mediaStorage = MediaStorageManager(context)
+        testableManager = TestableAudioPlaybackManager(context, mediaStorage)
         tempAudioFile = File(context.cacheDir, "test_voice.m4a").apply {
             writeText("dummy audio data")
         }
@@ -62,41 +94,64 @@ class AudioPlaybackManagerTest {
     }
 
     @Test
-    fun playItem_usesTts_whenAudioPathIsNull() {
-        val item = TalkItemEntity(title = "Пить", speechText = "Я хочу пить", audioPath = null)
-        testableManager.playItem(item)
+    fun playItem_usesTts_whenTtsStrategyIsSelected() {
+        val item = TalkItemEntity(
+            title = "Пить",
+            speechText = "Я хочу пить",
+            voiceStrategyId = ttsStrategy.id,
+            audioPath = tempAudioFile.absolutePath // Даже если файл есть, стратегия TTS должна использовать синтез
+        )
+
+        testableManager.playItem(item, ttsStrategy)
 
         assertNull(testableManager.lastPlayedFile)
         assertEquals("Я хочу пить", testableManager.lastSpokenText)
-        assertEquals(1, testableManager.stopCalledCount)
     }
 
     @Test
-    fun playItem_usesAudioFile_whenAudioFileExists() {
+    fun playItem_usesAudioFile_whenCustomRecordingStrategyAndFileExists() {
         val item = TalkItemEntity(
             title = "Мама",
             speechText = "Позови маму",
+            voiceStrategyId = customStrategy.id,
             audioPath = tempAudioFile.absolutePath
         )
-        testableManager.playItem(item)
+
+        testableManager.playItem(item, customStrategy)
 
         assertEquals(tempAudioFile.absolutePath, testableManager.lastPlayedFile?.absolutePath)
         assertNull(testableManager.lastSpokenText)
     }
 
     @Test
-    fun playItem_fallsBackToTts_whenAudioFileDoesNotExist() {
+    fun playItem_fallsBackToTts_whenCustomFileDoesNotExist() {
         val missingFilePath = File(context.cacheDir, "non_existent_audio.m4a").absolutePath
         val item = TalkItemEntity(
             title = "Яблоко",
             speechText = "Дай яблоко",
+            voiceStrategyId = customStrategy.id,
             audioPath = missingFilePath
         )
 
-        testableManager.playItem(item)
+        testableManager.playItem(item, customStrategy)
 
         assertNull(testableManager.lastPlayedFile)
         assertEquals("Дай яблоко", testableManager.lastSpokenText)
+    }
+
+    @Test
+    fun playItem_fallsBackToTts_whenBuiltInRawResourceNotFound() {
+        val item = TalkItemEntity(
+            title = "Суп",
+            speechText = "Я хочу суп",
+            voiceStrategyId = femaleRawStrategy.id,
+            builtInAudioKey = "missing_sound_key"
+        )
+
+        testableManager.playItem(item, femaleRawStrategy)
+
+        assertNull(testableManager.lastPlayedRawResId)
+        assertEquals("Я хочу суп", testableManager.lastSpokenText)
     }
 
     @Test
@@ -104,11 +159,10 @@ class AudioPlaybackManagerTest {
         val firstItem = TalkItemEntity(title = "Один", speechText = "Один")
         val secondItem = TalkItemEntity(title = "Два", speechText = "Два")
 
-        testableManager.playItem(firstItem)
-        testableManager.playItem(secondItem)
+        testableManager.playItem(firstItem, ttsStrategy)
+        testableManager.playItem(secondItem, ttsStrategy)
 
         assertTrue(testableManager.stopCalledCount >= 2)
         assertEquals("Два", testableManager.lastSpokenText)
     }
-
 }

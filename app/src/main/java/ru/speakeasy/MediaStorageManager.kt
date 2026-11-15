@@ -27,6 +27,21 @@ class MediaStorageManager @Inject constructor(
         }
     }
 
+    companion object {
+        const val RES_PREFIX = "res://"
+    }
+
+    fun isBuiltInResource(path: String?): Boolean{
+        return path != null && path.startsWith(RES_PREFIX)
+    }
+
+    fun resolveResourceId(path: String?, defType: String): Int{
+        if (!isBuiltInResource(path)) return 0
+        val resName = path!!.removePrefix(RES_PREFIX)
+        return context.resources.getIdentifier(resName, defType, context.packageName)
+    }
+
+
     // новый пустой файл для аудио
     fun createNewAudioFilePath(extension: String = "m4a"): String {
         val fileName = "audio_${UUID.randomUUID()}.$extension"
@@ -59,7 +74,7 @@ class MediaStorageManager @Inject constructor(
 
     // удаляет файл из папки медиа
     fun deleteMediaFile(filePath: String?) {
-        if (filePath.isNullOrBlank()) return
+        if (filePath.isNullOrBlank() || isBuiltInResource(filePath)) return
         val file = File(filePath)
         if (file.exists() && file.parentFile?.canonicalPath == mediaDir.canonicalPath) {
             file.delete()
