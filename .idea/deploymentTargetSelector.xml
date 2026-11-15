@@ -30,11 +30,11 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="itemBecomesCategory_whenChildIsAdded_andRevertsWhenChildIsDeleted()">
+      <SelectionState runConfigName="TalkRepositoryTest">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="TalkRepositoryTest">
+      <SelectionState runConfigName="AudioPlaybackManagerTest">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
