@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,7 +22,7 @@ class TalkRepositoryTest {
     private lateinit var context: Context
     private lateinit var database: AppDatabase
     private lateinit var dao: TalkItemDao
-    private lateinit var strategyDao: VoiceStrategyDao
+    private lateinit var actionDao: CardActionDao
     private lateinit var mediaStorage: MediaStorageManager
     private lateinit var repository: TalkRepository
 
@@ -38,21 +37,9 @@ class TalkRepositoryTest {
             .build()
 
         dao = database.talkItemDao()
-        strategyDao = database.voiceStrategyDao()
+        actionDao = database.cardActionDao()
         mediaStorage = MediaStorageManager(context)
-        repository = TalkRepository(dao, mediaStorage)
-
-        // Вставляем базовую стратегию для соблюдения целостности ForeignKey
-        runBlocking {
-            strategyDao.insertStrategy(
-                VoiceStrategyEntity(
-                    id = 1L,
-                    name = "Синтезатор речи",
-                    engineType = VoiceEngineType.TTS,
-                    isSystem = true
-                )
-            )
-        }
+        repository = TalkRepository(dao, actionDao, mediaStorage)
     }
 
     @After
@@ -62,37 +49,35 @@ class TalkRepositoryTest {
     }
 
     @Test
-    fun getCardWithParent_returnsCardAndItsParentCategory() = runTest {
+    fun getCardDetails_returnsCardParentAndPolymorphicActions() = runTest {
         val foodId = repository.saveItem(
-            TalkItemEntity(title = "Еда", speechText = "Еда", parentId = null)
+            TalkItemEntity(title = "Еда", parentId = null)
         )
-        val appleId = repository.saveItem(
-            TalkItemEntity(title = "Яблоко", speechText = "Я хочу яблоко", parentId = foodId)
+        val appleId = repository.saveCardWithActions(
+            item = TalkItemEntity(title = "Яблоко", parentId = foodId),
+            actions = listOf(
+                SpeakCardAction(speechText = "Я хочу яблоко", sortOrder = 1),
+                LaunchAppCardAction(
+                    packageName = "com.example.game",
+                    launchArgs = mapOf("level" to "1"),
+                    sortOrder = 2
+                )
+            )
         )
 
-        val result = repository.getCardWithParent(appleId)
+        val details = repository.getCardDetails(appleId)
 
-        assertNotNull(result)
-        assertEquals("Яблоко", result?.card?.title)
-        assertNotNull(result?.parentCategory)
-        assertEquals("Еда", result?.parentCategory?.title)
+        assertNotNull(details)
+        assertEquals("Яблоко", details?.card?.title)
+        assertEquals("Еда", details?.parentCategory?.title)
+        assertEquals(2, details?.actions?.size)
+        assertTrue(details?.actions?.get(0) is SpeakCardAction)
+        assertTrue(details?.actions?.get(1) is LaunchAppCardAction)
+        assertEquals("1", (details?.actions?.get(1) as LaunchAppCardAction).launchArgs["level"])
     }
 
     @Test
-    fun getCardWithParent_returnsNullParent_whenCardIsAtRoot() = runTest {
-        val drinkId = repository.saveItem(
-            TalkItemEntity(title = "Пить", speechText = "Я хочу пить", parentId = null)
-        )
-
-        val result = repository.getCardWithParent(drinkId)
-
-        assertNotNull(result)
-        assertEquals("Пить", result?.card?.title)
-        assertNull(result?.parentCategory)
-    }
-
-    @Test
-    fun deleteItem_deletesFilesInsideMediaFolder_andProtectsExternalFiles() = runTest {
+    fun deleteItem_deletesAudioFromSpeakAction_andProtectsExternalFiles() = runTest {
         val internalAudioPath = mediaStorage.createNewAudioFilePath("m4a")
         val internalAudioFile = File(internalAudioPath).apply {
             writeText("fake audio content")
@@ -104,12 +89,16 @@ class TalkRepositoryTest {
         }
         assertTrue(externalFile.exists())
 
-        val cardId = repository.saveItem(
-            TalkItemEntity(
+        val cardId = repository.saveCardWithActions(
+            item = TalkItemEntity(
                 title = "Тест",
-                speechText = "Тест",
-                audioPath = internalAudioPath,
                 imagePath = externalFile.absolutePath
+            ),
+            actions = listOf(
+                SpeakCardAction(
+                    speechText = "Тест",
+                    audioPath = internalAudioPath
+                )
             )
         )
         val savedCard = dao.getItemById(cardId)!!
@@ -117,6 +106,7 @@ class TalkRepositoryTest {
         repository.deleteItem(savedCard)
 
         assertNull(dao.getItemById(cardId))
+        assertTrue(repository.getActionsForItem(cardId).isEmpty())
         assertFalse(internalAudioFile.exists())
         assertTrue(externalFile.exists())
 

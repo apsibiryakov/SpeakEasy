@@ -5,7 +5,6 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,7 +19,6 @@ import org.junit.runner.RunWith
 class TalkItemDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var dao: TalkItemDao
-    private lateinit var strategyDao: VoiceStrategyDao
 
     @Before
     fun setup() {
@@ -32,19 +30,6 @@ class TalkItemDaoTest {
             .allowMainThreadQueries()
             .build()
         dao = database.talkItemDao()
-        strategyDao = database.voiceStrategyDao()
-
-        // Создаем базовую стратегию с id = 1L, чтобы не нарушать ForeignKey при вставке карточек
-        runBlocking {
-            strategyDao.insertStrategy(
-                VoiceStrategyEntity(
-                    id = 1L,
-                    name = "Синтезатор речи",
-                    engineType = VoiceEngineType.TTS,
-                    isSystem = true
-                )
-            )
-        }
     }
 
     @After
@@ -55,7 +40,7 @@ class TalkItemDaoTest {
     @Test
     fun itemBecomesCategory_whenChildIsAdded_andRevertsWhenChildDeleted() = runTest {
         val foodId = dao.insertItem(
-            TalkItemEntity(title = "Еда", speechText = "Я хочу есть", parentId = null)
+            TalkItemEntity(title = "Еда", parentId = null)
         )
 
         var rootItems = dao.observeRootItems().first()
@@ -64,7 +49,7 @@ class TalkItemDaoTest {
         assertFalse(rootItems[0].isCategory)
 
         val appleId = dao.insertItem(
-            TalkItemEntity(title = "Яблоко", speechText = "Яблоко", parentId = foodId)
+            TalkItemEntity(title = "Яблоко", parentId = foodId)
         )
 
         rootItems = dao.observeRootItems().first()
@@ -84,10 +69,10 @@ class TalkItemDaoTest {
     @Test
     fun observeChildItemsByItem_returnsOnlyChildrenOfSpecificParent() = runTest {
         val foodId = dao.insertItem(
-            TalkItemEntity(title = "Еда", speechText = "Я хочу есть", parentId = null, sortOrder = 1)
+            TalkItemEntity(title = "Еда", parentId = null, sortOrder = 1)
         )
         dao.insertItem(
-            TalkItemEntity(title = "Питье", speechText = "Дай попить", parentId = null, sortOrder = 2)
+            TalkItemEntity(title = "Питье", parentId = null, sortOrder = 2)
         )
         dao.insertAll(
             listOf(
@@ -106,10 +91,10 @@ class TalkItemDaoTest {
     @Test
     fun deleteParentCategory_cascadesAndDeletesAllChildren() = runTest {
         val foodId = dao.insertItem(
-            TalkItemEntity(title = "Еда", speechText = "Я хочу есть", parentId = null)
+            TalkItemEntity(title = "Еда", parentId = null)
         )
         val appleId = dao.insertItem(
-            TalkItemEntity(title = "Яблоко", speechText = "Яблоко", parentId = foodId)
+            TalkItemEntity(title = "Яблоко", parentId = foodId)
         )
 
         val foodEntity = dao.getItemById(foodId)!!

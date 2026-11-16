@@ -94,73 +94,59 @@ class AudioPlaybackManagerTest {
     }
 
     @Test
-    fun playItem_usesTts_whenTtsStrategyIsSelected() {
-        val item = TalkItemEntity(
-            title = "Пить",
+    fun playSpeech_usesTts_whenTtsStrategyIsSelected() {
+        testableManager.playSpeech(
             speechText = "Я хочу пить",
-            voiceStrategyId = ttsStrategy.id,
-            audioPath = tempAudioFile.absolutePath // Даже если файл есть, стратегия TTS должна использовать синтез
+            audioPath = tempAudioFile.absolutePath,
+            strategy = ttsStrategy
         )
-
-        testableManager.playItem(item, ttsStrategy)
 
         assertNull(testableManager.lastPlayedFile)
         assertEquals("Я хочу пить", testableManager.lastSpokenText)
     }
 
     @Test
-    fun playItem_usesAudioFile_whenCustomRecordingStrategyAndFileExists() {
-        val item = TalkItemEntity(
-            title = "Мама",
+    fun playSpeech_usesAudioFile_whenCustomRecordingStrategyAndFileExists() {
+        testableManager.playSpeech(
             speechText = "Позови маму",
-            voiceStrategyId = customStrategy.id,
-            audioPath = tempAudioFile.absolutePath
+            audioPath = tempAudioFile.absolutePath,
+            strategy = customStrategy
         )
-
-        testableManager.playItem(item, customStrategy)
 
         assertEquals(tempAudioFile.absolutePath, testableManager.lastPlayedFile?.absolutePath)
         assertNull(testableManager.lastSpokenText)
     }
 
     @Test
-    fun playItem_fallsBackToTts_whenCustomFileDoesNotExist() {
+    fun playSpeech_fallsBackToTts_whenCustomFileDoesNotExist() {
         val missingFilePath = File(context.cacheDir, "non_existent_audio.m4a").absolutePath
-        val item = TalkItemEntity(
-            title = "Яблоко",
-            speechText = "Дай яблоко",
-            voiceStrategyId = customStrategy.id,
-            audioPath = missingFilePath
-        )
 
-        testableManager.playItem(item, customStrategy)
+        testableManager.playSpeech(
+            speechText = "Дай яблоко",
+            audioPath = missingFilePath,
+            strategy = customStrategy
+        )
 
         assertNull(testableManager.lastPlayedFile)
         assertEquals("Дай яблоко", testableManager.lastSpokenText)
     }
 
     @Test
-    fun playItem_fallsBackToTts_whenBuiltInRawResourceNotFound() {
-        val item = TalkItemEntity(
-            title = "Суп",
+    fun playSpeech_fallsBackToTts_whenBuiltInRawResourceNotFound() {
+        testableManager.playSpeech(
             speechText = "Я хочу суп",
-            voiceStrategyId = femaleRawStrategy.id,
-            builtInAudioKey = "missing_sound_key"
+            builtInAudioKey = "missing_sound_key",
+            strategy = femaleRawStrategy
         )
-
-        testableManager.playItem(item, femaleRawStrategy)
 
         assertNull(testableManager.lastPlayedRawResId)
         assertEquals("Я хочу суп", testableManager.lastSpokenText)
     }
 
     @Test
-    fun playItem_stopsPreviousPlaybackBeforeStartingNew() {
-        val firstItem = TalkItemEntity(title = "Один", speechText = "Один")
-        val secondItem = TalkItemEntity(title = "Два", speechText = "Два")
-
-        testableManager.playItem(firstItem, ttsStrategy)
-        testableManager.playItem(secondItem, ttsStrategy)
+    fun playSpeech_stopsPreviousPlaybackBeforeStartingNew() {
+        testableManager.playSpeech(speechText = "Один", strategy = ttsStrategy)
+        testableManager.playSpeech(speechText = "Два", strategy = ttsStrategy)
 
         assertTrue(testableManager.stopCalledCount >= 2)
         assertEquals("Два", testableManager.lastSpokenText)
