@@ -18,15 +18,16 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-
 object DatabaseModule {
+
     @Provides
     @Singleton
     fun provideAppDatabase(
         @ApplicationContext context: Context,
         greetingDaoProvider: Provider<GreetingDao>,
         talkItemDaoProvider: Provider<TalkItemDao>,
-        voiceStrategyDaoProvider: Provider<VoiceStrategyDao>
+        voiceStrategyDaoProvider: Provider<VoiceStrategyDao>,
+        cardActionDaoProvider: Provider<CardActionDao>
     ): AppDatabase {
         return Room.databaseBuilder(
             context,
@@ -38,12 +39,14 @@ object DatabaseModule {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
                     CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                        // стартовое приветствие
                         greetingDaoProvider.get().insertGreeting(
                             GreetingEntity(id = 1, message = "Hello Android from Room")
                         )
-                        // стартовые карточки
-                        seedInitialTalkItems(talkItemDaoProvider.get(), voiceStrategyDaoProvider.get())
+                        seedInitialTalkItems(
+                            dao = talkItemDaoProvider.get(),
+                            strategyDao = voiceStrategyDaoProvider.get(),
+                            actionDao = cardActionDaoProvider.get()
+                        )
                     }
                 }
             })
@@ -52,23 +55,26 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideVoiceStrategyDao(database: AppDatabase): VoiceStrategyDao {
-        return database.voiceStrategyDao()
-    }
+    fun provideGreetingDao(database: AppDatabase): GreetingDao = database.greetingDao()
 
     @Provides
     @Singleton
-    fun provideGreetingDao(database: AppDatabase): GreetingDao {
-        return database.greetingDao()
-    }
+    fun provideTalkItemDao(database: AppDatabase): TalkItemDao = database.talkItemDao()
 
     @Provides
     @Singleton
-    fun provideTalkItemDao(database: AppDatabase): TalkItemDao {
-        return database.talkItemDao()
-    }
+    fun provideVoiceStrategyDao(database: AppDatabase): VoiceStrategyDao = database.voiceStrategyDao()
 
-    private suspend fun seedInitialTalkItems(dao: TalkItemDao, strategyDao: VoiceStrategyDao) {
+    @Provides
+    @Singleton
+    fun provideCardActionDao(database: AppDatabase): CardActionDao = database.cardActionDao()
+
+    private suspend fun seedInitialTalkItems(
+        dao: TalkItemDao,
+        strategyDao: VoiceStrategyDao,
+        actionDao: CardActionDao
+    ) {
+        // 1. Создаем системные стратегии озвучки
         val ttsId = strategyDao.insertStrategy(
             VoiceStrategyEntity(
                 id = 1L,
@@ -77,7 +83,7 @@ object DatabaseModule {
                 isSystem = true
             )
         )
-        val customId = strategyDao.insertStrategy(
+        strategyDao.insertStrategy(
             VoiceStrategyEntity(
                 id = 2L,
                 name = "Записанный голос",
@@ -85,7 +91,7 @@ object DatabaseModule {
                 isSystem = true
             )
         )
-        val femaleId = strategyDao.insertStrategy(
+        strategyDao.insertStrategy(
             VoiceStrategyEntity(
                 id = 3L,
                 name = "Женский голос",
@@ -94,40 +100,28 @@ object DatabaseModule {
                 isSystem = true
             )
         )
-        val foodCategoryId = dao.insertItem(
-            TalkItemEntity(
-                title = "Еда",
-                speechText = "Я хочу есть",
-                parentId = null,
-                sortOrder = 1,
-                voiceStrategyId = ttsId
-            )
-        )
-        dao.insertAll(
-            listOf(
-                TalkItemEntity(
-                    title = "Питье",
-                    speechText = "Дай попить",
-                    parentId = null,
-                    sortOrder = 2,
-                    voiceStrategyId = ttsId
-                ),
-                TalkItemEntity(
-                    title = "Яблоко",
-                    speechText = "Яблоко",
-                    parentId = foodCategoryId,
-                    sortOrder = 1,
-                    voiceStrategyId = ttsId
-                ),
-                TalkItemEntity(
-                    title = "Суп",
-                    speechText = "Суп",
-                    parentId = foodCategoryId,
-                    sortOrder = 2,
-                    voiceStrategyId = ttsId
-                )
-            )
-        )
-    }
 
+        // 2. Создаем стартовые карточки и привязываем к каждой действие озвучки
+        val foodCategoryId = dao.insertItem(
+            TalkItemEntity(title = "Еда", parentId = null, sortOrder = 1)
+        )
+        val drinkId = dao.insertItem(
+            TalkItemEntity(title = "Пить", parentId = null, sortOrder = 2)
+        )
+        val appleId = dao.insertItem(
+            TalkItemEntity(title = "Яблоко", parentId = foodCategoryId, sortOrder = 1)
+        )
+        val soupId = dao.insertItem(
+            TalkItemEntity(title = "Суп", parentId = foodCategoryId, sortOrder = 2)
+        )
+
+        val defaultSpeakActions = listOf(
+            SpeakCardAction(talkItemId = foodCategoryId, speechText = "Я хочу есть", voiceStrategyId = ttsId, sortOrder = 1),
+            SpeakCardAction(talkItemId = drinkId, speechText = "Я хочу пить", voiceStrategyId = ttsId, sortOrder = 1),
+            SpeakCardAction(talkItemId = appleId, speechText = "Я хочу яблоко", voiceStrategyId = ttsId, sortOrder = 1),
+            SpeakCardAction(talkItemId = soupId, speechText = "Я хочу суп", voiceStrategyId = ttsId, sortOrder = 1)
+        ).map { CardActionMapper.toEntity(it) }
+
+        actionDao.insertAll(defaultSpeakActions)
+    }
 }
