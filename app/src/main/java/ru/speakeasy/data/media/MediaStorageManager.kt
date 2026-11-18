@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.data.media
 
 import android.content.Context
 import android.net.Uri
@@ -7,11 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.security.cert.Extension
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class MediaStorageManager @Inject constructor(

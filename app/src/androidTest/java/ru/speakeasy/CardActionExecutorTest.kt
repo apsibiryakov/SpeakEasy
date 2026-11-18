@@ -6,6 +6,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.speakeasy.domain.action.ActionHandler
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.CardActionExecutor
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakCardAction
 
 @RunWith(AndroidJUnit4::class)
 class CardActionExecutorTest {

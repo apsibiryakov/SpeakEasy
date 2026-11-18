@@ -22,6 +22,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.speakeasy.data.db.AppDatabase
+import ru.speakeasy.data.db.TalkItemEntity
+import ru.speakeasy.data.media.AudioPlaybackManager
+import ru.speakeasy.data.media.MediaStorageManager
+import ru.speakeasy.data.repository.TalkRepository
+import ru.speakeasy.domain.action.ActionHandler
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.CardActionExecutor
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakCardAction
+import ru.speakeasy.ui.TalkViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)

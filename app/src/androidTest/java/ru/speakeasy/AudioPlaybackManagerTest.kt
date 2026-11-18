@@ -10,6 +10,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.speakeasy.data.db.VoiceEngineType
+import ru.speakeasy.data.db.VoiceStrategyEntity
+import ru.speakeasy.data.media.AudioPlaybackManager
+import ru.speakeasy.data.media.MediaStorageManager
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)

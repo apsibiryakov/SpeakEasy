@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +12,13 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.speakeasy.data.db.TalkItemEntityWithType
+import ru.speakeasy.data.db.TalkItemEntity
+import ru.speakeasy.data.media.AudioPlaybackManager
+import ru.speakeasy.data.repository.CardDetails
+import ru.speakeasy.data.repository.TalkRepository
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.CardActionExecutor
 import javax.inject.Inject
 
 /**
@@ -31,7 +38,6 @@ class TalkViewModel @Inject constructor(
     private val actionExecutor: CardActionExecutor,
     private val audioPlaybackManager: AudioPlaybackManager
 ) : ViewModel() {
-
     // ID текущей открытой категории (null = корневой экран)
     private val currentCategoryId = MutableStateFlow<Long?>(null)
 

@@ -14,6 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import ru.speakeasy.ui.TalkViewModel
+import ru.speakeasy.ui.screens.TalkCardMainScreen
+import ru.speakeasy.ui.screens.TalkCardSimpleScreen
 import ru.speakeasy.ui.theme.SpeakEasyTheme
 
 @AndroidEntryPoint

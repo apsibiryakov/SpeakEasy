@@ -14,6 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.speakeasy.data.db.AppDatabase
+import ru.speakeasy.data.db.TalkItemDao
+import ru.speakeasy.data.db.TalkItemEntity
 
 @RunWith(AndroidJUnit4::class)
 class TalkItemDaoTest {

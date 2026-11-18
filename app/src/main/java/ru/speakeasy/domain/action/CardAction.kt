@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.domain.action
 
 import kotlinx.serialization.Serializable
 
