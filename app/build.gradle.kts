@@ -66,4 +66,9 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.kotlinx.serialization.json)
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("androidx.compose.material:material-icons-core")
+
 }

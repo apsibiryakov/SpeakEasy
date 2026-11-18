@@ -40,7 +40,7 @@ interface TalkItemDao {
     @Query("""
         select talk_items.* from talk_items where id = :itemId limit 1
     """ )
-    fun getItemById(itemId: Long): TalkItemEntity?
+    suspend fun getItemById(itemId: Long): TalkItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: TalkItemEntity): Long
