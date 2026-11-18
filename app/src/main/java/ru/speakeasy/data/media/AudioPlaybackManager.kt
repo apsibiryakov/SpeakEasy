@@ -1,10 +1,12 @@
-package ru.speakeasy
+package ru.speakeasy.data.media
 
 import android.content.Context
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.speakeasy.data.db.VoiceEngineType
+import ru.speakeasy.data.db.VoiceStrategyEntity
 import java.io.File
 import java.util.Locale
 import javax.inject.Inject

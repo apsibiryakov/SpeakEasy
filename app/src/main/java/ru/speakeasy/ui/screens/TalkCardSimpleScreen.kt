@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,6 +33,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ru.speakeasy.data.repository.CardDetails
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakCardAction
+import ru.speakeasy.ui.components.TalkCardImage
 
 @Composable
 fun TalkCardSimpleScreen(

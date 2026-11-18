@@ -1,6 +1,5 @@
-package ru.speakeasy
+package ru.speakeasy.data.db
 
-import android.net.IpPrefix
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 

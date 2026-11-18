@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.di
 
 import dagger.Binds
 import dagger.Module
@@ -6,6 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.ClassKey
 import dagger.multibindings.IntoMap
+import ru.speakeasy.domain.action.ActionHandler
+import ru.speakeasy.domain.action.LaunchAppActionHandler
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakActionHandler
+import ru.speakeasy.domain.action.SpeakCardAction
 
 @Module
 @InstallIn(SingletonComponent::class)

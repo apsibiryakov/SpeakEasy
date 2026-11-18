@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.data.db
 
 import androidx.room.Embedded
 

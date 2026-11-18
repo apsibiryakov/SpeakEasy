@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import ru.speakeasy.data.media.MediaStorageManager
 import java.io.File
 
 @Composable

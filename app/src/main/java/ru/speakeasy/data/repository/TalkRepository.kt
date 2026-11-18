@@ -1,7 +1,19 @@
-package ru.speakeasy
+package ru.speakeasy.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakCardAction
+import ru.speakeasy.data.db.TalkItemEntityWithType
+import ru.speakeasy.data.db.CardActionDao
+import ru.speakeasy.data.db.CardActionMapper
+import ru.speakeasy.data.db.TalkItemDao
+import ru.speakeasy.data.db.TalkItemEntity
+import ru.speakeasy.data.db.VoiceEngineType
+import ru.speakeasy.data.db.VoiceStrategyDao
+import ru.speakeasy.data.db.VoiceStrategyEntity
+import ru.speakeasy.data.media.MediaStorageManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -106,4 +118,5 @@ class TalkRepository @Inject constructor(
         // 3. Удаляем карточку из БД (записи в card_actions удалятся каскадно через ForeignKey)
         dao.deleteItem(item)
     }
+
 }

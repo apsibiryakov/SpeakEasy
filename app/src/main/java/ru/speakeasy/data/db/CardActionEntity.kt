@@ -1,10 +1,13 @@
-package ru.speakeasy
+package ru.speakeasy.data.db
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.json.Json
+import ru.speakeasy.domain.action.CardAction
+import ru.speakeasy.domain.action.LaunchAppCardAction
+import ru.speakeasy.domain.action.SpeakCardAction
 
 enum class CardActionType {
     SPEAK,

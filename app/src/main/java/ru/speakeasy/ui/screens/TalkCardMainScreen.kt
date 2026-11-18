@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -39,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ru.speakeasy.data.db.TalkItemEntityWithType
+import ru.speakeasy.data.db.TalkItemEntity
+import ru.speakeasy.ui.components.TalkCardImage
 
 // Зеленый цвет для пунктирной рамки категорий
 private val CategoryGreenBorder = Color(0xFF2E7D32)

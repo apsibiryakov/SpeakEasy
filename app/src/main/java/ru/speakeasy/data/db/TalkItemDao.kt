@@ -1,4 +1,4 @@
-package ru.speakeasy
+package ru.speakeasy.data.db
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -41,6 +41,9 @@ interface TalkItemDao {
         select talk_items.* from talk_items where id = :itemId limit 1
     """ )
     suspend fun getItemById(itemId: Long): TalkItemEntity?
+
+    @Query("select talk_items.* from talk_items where parentId is null")
+    suspend fun getRootItemsOnce(): List<TalkItemEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: TalkItemEntity): Long
