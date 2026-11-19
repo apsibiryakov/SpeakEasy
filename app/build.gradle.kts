@@ -19,7 +19,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "ru.speakeasy.HiltTestRunner"
     }
 
     buildTypes {
@@ -70,5 +70,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("androidx.compose.material:material-icons-core")
+
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.56.1")
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.56.1")
 
 }
