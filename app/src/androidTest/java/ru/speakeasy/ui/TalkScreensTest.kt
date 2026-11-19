@@ -165,7 +165,7 @@ class TalkScreensTest {
             composeTestRule.onNodeWithText("Открыть приложение").performClick()
             assertEquals(extraAction, executedExtraAction)
 
-            composeTestRule.onNodeWithContentDescription("Закрыть карточку").performClick()
+            composeTestRule.onNodeWithContentDescription("Вернуться назад").performClick()
             assertTrue(closeClicked)
         }
     }

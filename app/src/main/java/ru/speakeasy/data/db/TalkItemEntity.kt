@@ -23,5 +23,6 @@ data class TalkItemEntity(
     val title: String,
     val parentId: Long? = null,
     val sortOrder: Int = 0,
-    val imagePath: String? = null
+    val imagePath: String? = null,
+    val isActive: Boolean = true
 )
