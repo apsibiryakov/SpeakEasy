@@ -16,6 +16,7 @@ interface TalkItemDao {
                                 where children.parentId = talk_items.id) as childrenCount
         from talk_items
         where talk_items.parentId is null
+        and talk_items.isActive = 1
         order by talk_items.sortOrder asc, talk_items.id asc
     """)
     fun observeRootItems(): Flow<List<TalkItemEntityWithType>>
@@ -26,9 +27,19 @@ interface TalkItemDao {
                                 where children.parentId = talk_items.id) as childrenCount
         from talk_items
         where talk_items.parentId = :itemId
+        and talk_items.isActive = 1
         order by talk_items.sortOrder asc, talk_items.id asc
     """)
     fun observeChildItemsByItem(itemId: Long): Flow<List<TalkItemEntityWithType>>
+
+    @Query("""
+        select talk_items.*, 
+               (select count(*) from talk_items children where children.parentId = talk_items.id) AS childrenCount 
+        from talk_items 
+        where (:parentId IS NULL AND talk_items.parentId IS NULL) OR talk_items.parentId = :parentId
+        order by talk_items.sortOrder asc, talk_items.id asc
+    """)
+    fun observeAllItemsForEditor(parentId: Long?): Flow<List<TalkItemEntityWithType>>
 
     // реактивное получение одного элемента
     @Query("""
@@ -53,6 +64,9 @@ interface TalkItemDao {
 
     @Update
     suspend fun updateItem(item: TalkItemEntity)
+
+    @Query("update talk_items set isActive = :isActive where id = :itemId")
+    suspend fun setItemActive(itemId: Long, isActive: Boolean)
 
     @Delete
     suspend fun deleteItem(item: TalkItemEntity)
